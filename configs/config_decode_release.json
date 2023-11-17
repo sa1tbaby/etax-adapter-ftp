@@ -1,0 +1,40 @@
+{
+  "ftp_connection": {
+    "password":"sc99usr_QWE123",
+    "user_name":"sc99usr",
+    "host":"tkles-tfs000024.vm.esrt.cloud.sbrf.ru",
+    "time_out":10,
+    "acct":"",
+    "log_level":10,
+    "logger_setting": {
+      "log_level": 10,
+      "log_path": "logs",
+      "file_mode": "w",
+      "format": "__%(name)s__: %(asctime)s __%(levelname)s__   \n%(message)s"
+    }
+  },
+  "cert": {
+    "path_cert":"/distr2/new_cert_2022/00CA0001CTFSkorususr.pem",
+    "pass_cert":"/distr2/new_cert_2022/00CA0001CTFSkorususr_22.key"
+  },
+  "send": {
+    "current":"/Config/FromFNS",
+    "destination":"/file_shares/SO/from/EDOSORT/FilesfromFNS"
+  },
+  "get": {
+    "destination":"/Config/ForFNS",
+    "current":"/file_shares/SO/to/EDOSORT/FilesforFNS"
+  },
+  "settings": {
+    "script_delay_timer":15,
+    "script_listing_timer_os":6,
+    "script_listing_timer_ftp":6,
+    "script_dwnld_timer":12,
+    "main_sleep_timer":6,
+    "script_restart_timer":20,
+    "try_count": 3,
+    "logs_path":"logs",
+    "logs_file":"log.txt",
+    "logs_file_mod": "a"
+  }
+}
