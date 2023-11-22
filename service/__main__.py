@@ -2,6 +2,9 @@ from service.app import start_app
 from multiprocessing import Process, set_start_method, Queue
 from time import sleep
 from utils.Models import ServiceSettings, Routes, FtpConnection
+from utils.func import put_in_queue, script_status
+
+
 set_start_method('spawn')
 
 SETTINGS = ServiceSettings()
@@ -13,25 +16,7 @@ CONFIG = FtpConnection()
 CONNECTION_SSL = False
 
 
-def script_status(process: Process | bool):
-    def check_put(
-            queue
-    ) -> None:
 
-        tmp = True
-
-        while not queue.empty():
-            tmp = queue.get()
-
-        return tmp
-
-    if check_put(APP_STATUS_QUEUE) == 'dead':
-        main_log.debug(f'process status dead')
-        return False
-
-    else:
-        main_log.info(f'process status {process.is_alive()}')
-        return process.is_alive()
 
 
 def main():
@@ -40,7 +25,7 @@ def main():
 
     while True:
 
-        if script_status(process=main_process) is False:
+        if not script_status(process=main_process, status_queue=APP_STATUS_QUEUE):
 
             main_process = Process(
                 target=start_app,
@@ -60,3 +45,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

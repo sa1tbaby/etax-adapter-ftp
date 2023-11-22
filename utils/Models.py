@@ -5,8 +5,9 @@ from pandas import DataFrame
 from pydantic import BaseModel, field_validator
 from typing import List, Any
 from ssl import SSLContext, PROTOCOL_TLS_SERVER
-from OpenSSL.crypto import dump_certificate, dump_privatekey, FILETYPE_PEM
+from OpenSSL.crypto import FILETYPE_PEM, load_certificate, load_privatekey, dump_certificate, dump_privatekey
 from dataclasses import dataclass
+
 
 
 @dataclass
@@ -41,20 +42,19 @@ class FtpConnection(MyBaseModel):
 
     password: str
     user_name: str
-    host: Any
+    host: str
     time_out: int
     acct: str = None
-    cert_file: str
-    key_file: str
 
+    cert_key: str = None
     cert_path: str = None
-    cert_pass: bytes = None
+    cert_pass: str = None
     cert_obj: Any = None
 
     @field_validator('*')
     @classmethod
     def __none_type_validate__(cls, item):
-        if item == 'None':
+        if item == 'None' or '':
             return None
         return item
 
@@ -75,15 +75,21 @@ class FtpConnection(MyBaseModel):
             return item
 
         with open(cls.cert_path, 'rb') as file:
-            p12 = load_pkcs12(file.read(), cls.cert_pass)
+            PEM_cert = dump_certificate(
+                FILETYPE_PEM,
+                load_certificate(FILETYPE_PEM, file.read())
+            )
 
-        p12_cert = dump_certificate(FILETYPE_PEM, p12.get_certificate())
-        p12_key = dump_privatekey(FILETYPE_PEM, p12.get_privatekey())
+        with (open(cls.cert_key, 'rb') as file):
+            PEM_key = dump_privatekey(
+                FILETYPE_PEM,
+                load_privatekey(FILETYPE_PEM, file.read())
+            )
 
         cert = SSLContext(PROTOCOL_TLS_SERVER)
-        cert.load_cert_chain(certfile=p12_cert,
-                             keyfile=p12_key,
-                             password=None)
+        cert.load_cert_chain(certfile=PEM_cert,
+                             keyfile=PEM_key,
+                             password=cls.cert_pass)
 
         return cert
 
@@ -95,16 +101,9 @@ class LoggerSettings(MyBaseModel):
     """
 
     log_level: int
-    log_path: str
+    log_file: list
     file_mode: str
-    output_format: str
-
-    @field_validator('log_path')
-    @classmethod
-    def abspath_validate(cls, item):
-        if item[0] != '/':
-            item = os.path.abspath(item)
-        return item
+    format: str
 
 
 class Directories(MyBaseModel):
@@ -140,8 +139,9 @@ class ServiceSettings(MyBaseModel):
     """
 
     main_health_check_timer: int
-    dwnld_timer: int
-    app_sleep_timer: int
+    app_dwnld_timer_client: int
+    app_dwnld_timer_server: int
+    app_sleep_time: int
     app_restart_timer: int
     download_try_count: int
     validator: str

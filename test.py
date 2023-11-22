@@ -3,7 +3,7 @@ import time
 
 import pandas
 
-from utils.Decorators import timer
+from utils.Decorators import timer, AditionalTimer
 from multiprocessing import Process
 class ttt:
     def __init__(self):
@@ -84,18 +84,27 @@ def test_pandas1():
 
 
 def test_timer():
-    config = {'tets': 15}
+    config = {'tets': 3, 'tets2': 6}
     obj_list = dict()
     res = False
 
-    while not res:
-        @timer(config=config, obj_list=obj_list)
-        def tets(i, j):
-            ressss = i * j
-            return ressss
 
-        res, obj_list = tets(3, 4)
-        print(res, obj_list)
+    @AditionalTimer(config=config, obj_list=obj_list)
+    def tets(i, j):
+        ressss = i * j
+        return ressss
+
+    @AditionalTimer(config=config, obj_list=obj_list)
+    def tets2(i, j):
+        ressss = i * j
+        return ressss
+
+
+    while True:
+
+        res = tets(2, 3)
+        res2 = tets2(4, 5)
+        print(res, res2)
         time.sleep(1)
 
 def test55():
@@ -114,12 +123,15 @@ def test55():
     aaaas(**asdafsas)
 
 def test22():
-    oass = Process
+    spisok = 'asd,asd,asd'
 
-    print(oass.is_alive())
+    spisok = spisok[spisok.find(','):]
+
+    spisok = spisok.split(',')
+    print(spisok)
 
 
 if __name__ == '__main__':
 
-    test22()
+    test_timer()
 

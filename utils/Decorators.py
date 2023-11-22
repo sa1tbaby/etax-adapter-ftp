@@ -17,10 +17,10 @@ def timer(config: dict, obj_list: dict):
 
     def func_wrap(func):
 
-        delta_t = start_time - obj_list.setdefault(func.__name__, start_time)
-
         @wraps(func)
         def _wrap(*args, **kwargs):
+
+            delta_t = start_time - obj_list.setdefault(func.__name__, start_time)
 
             if delta_t > config.get(func.__name__):
 
@@ -37,6 +37,40 @@ def timer(config: dict, obj_list: dict):
         return _wrap
 
     return func_wrap
+
+
+class AditionalTimer:
+
+    def __init__(
+            self,
+            config: dict,
+            obj_list: dict,
+    ):
+
+        self.config = config
+        self.obj_list = obj_list
+
+    def __call__(self, func):
+
+        @wraps(func)
+        def _wrapper(*args, **kwargs):
+
+            start_time = time()
+            deta_t = start_time - self.obj_list.setdefault(func.__name__, start_time)
+
+            if deta_t > self.config.get(func.__name__):
+
+                self.obj_list.update({func.__name__: start_time})
+
+                result = func(*args, **kwargs)
+
+            else:
+
+                result = False
+
+            return result
+
+        return _wrapper
 
 
 

@@ -452,10 +452,11 @@ class ServiceSender(ServiceListing):
 
                 files_list.loc[index, 'control_check'] = self.del_file(**kwargs)
                 self._log.info(f'Отправка документа {row["file_name"]} завершена успешно')
+                #CHANGEMETHOD!!!!!!!!!!!!!!!!!!!!!!!
                 files_list = files_list.drop(index)
 
             else:
-
+                #CHANGEMETHOD!!!!!!!!!!!!!!!!!!!!!!!
                 return files_list.count()
 
         return True

@@ -1,5 +1,7 @@
+import json
+import os.path
 import time
-
+import configs
 
 class Timer:
 
@@ -40,3 +42,16 @@ class Timer:
     @property
     def count(self):
         return self.__timers_list.keys()
+
+
+if __name__ == '__main__':
+    with open(os.path.join(os.path.pardir, 'configs', 'config_decode.json')) as file:
+        res = json.load(file)
+
+
+    asd = res.get('logger_setting')
+
+    asd = asd.get('log_file')
+
+    print()
+
