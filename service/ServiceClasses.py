@@ -1,22 +1,29 @@
 import pandas
-import time
 import logging
 import re
 
-from dataclasses import dataclass
-
-import os.path
+from os.path import abspath, join
 from os import walk, remove
 
 from ssl import SSLContext
 from multiprocessing import queues
 
-from utils.FTP import FtpBaseClass
+from utils.FtpBaseClass import FtpManager
 from utils.func import put_in_queue
-from utils.models import FtpConnection, ServiceSettings, Listing, Routes
+from utils.Models import FtpConnection, ServiceSettings, Listing, Routes, SendParams
+from utils.Decorators import timekeeper
 
 
-class ServiceListing(FtpBaseClass):
+class ServiceListing(FtpManager):
+
+    """
+    Обертка над классом FtpManager - для подключения очередей и получения листинга файлов
+
+        * listing_server_queue: queues.Queue, - Хранит информацию о листинге с сервера
+        * listing_client_queue: queues.Queue, - Хранит информацию о листинге с клиента
+
+    """
+
 
     def __init__(
             self,
@@ -27,6 +34,8 @@ class ServiceListing(FtpBaseClass):
             config: FtpConnection,
             connection_ssl: bool | SSLContext
     ):
+
+
         super().__init__(
             config=config,
             connection_ssl=connection_ssl,
@@ -39,13 +48,13 @@ class ServiceListing(FtpBaseClass):
 
         self._log: logging.Logger = logging.getLogger(__class__.__name__)
 
-    def from_server(
+    def listing_from_server(
             self
     ) -> bool | Listing:
 
         try:
-            listing_server = self.__get_list(mode=self.mode_server,
-                                             path=self.listing_paths.from_server_to_client.server_path)
+            listing_server, time_spend = self._get_list(mode=self.MODE_SERVER,
+                                            path=self.listing_paths.from_server_to_client.server_path)
 
             put_in_queue(queue=self.server_queue, message=listing_server)
 
@@ -63,6 +72,7 @@ class ServiceListing(FtpBaseClass):
 
                 else:
                     self._log.info(f'С сервера получен не пустой листинг \n'
+                                   f'time_spend={time_spend}\n'
                                    f'{listing_server.files_list}')
                     return listing_server
 
@@ -71,13 +81,13 @@ class ServiceListing(FtpBaseClass):
                                 exc_info=True)
                 return False
 
-    def from_client(
+    def listing_from_client(
             self
     ) -> bool | Listing:
 
         try:
-            listing_client = self.__get_list(mode=self.mode_client,
-                                             path=self.listing_paths.from_client_to_server.client_path)
+            listing_client, time_spend = self._get_list(mode=self.MODE_CLIENT,
+                                            path=self.listing_paths.from_client_to_server.client_path)
 
             put_in_queue(queue=self.client_queue, message=listing_client)
 
@@ -86,7 +96,8 @@ class ServiceListing(FtpBaseClass):
                 return False
 
             else:
-                self._log.info(f'С клиента получен не пустой листинг \n'
+                self._log.info(f'С клиента получен не пустой листинг '
+                               f'time_spend={time_spend}\n'
                                f'{listing_client.files_list}')
                 return listing_client
 
@@ -95,7 +106,8 @@ class ServiceListing(FtpBaseClass):
                             exc_info=True)
             return False
 
-    def __get_list(
+    @timekeeper
+    def _get_list(
             self,
             mode: str,
             path: str
@@ -104,17 +116,16 @@ class ServiceListing(FtpBaseClass):
         try:
 
             index = 0
-            start_time = time.time()
             files = None
-            files_list = self.__crate_data_frame()
+            files_list = self.__create_data_frame()
 
             match mode:
 
-                case self.mode_client:
-                    for directory, sub_dir, tmp_files in walk(os.path.abspath(path)):
+                case self.MODE_CLIENT:
+                    for directory, sub_dir, tmp_files in walk(abspath(path)):
                         files = tmp_files
 
-                case self.mode_server:
+                case self.MODE_SERVER:
                     # Попытка смены текущего каталога FTP
                     self.cwd(path)
                     # получаем список файлов из директории FTP
@@ -143,8 +154,6 @@ class ServiceListing(FtpBaseClass):
             # save and validate listing with __validation_model: model for pandas.DataFrame listing
             self.listing = Listing(files_list=files_list)
 
-            self._log.info(f'{self.__config_log["INFO_01"]}{mode}/{int(time.time() - start_time)}sec')
-
             return self.listing
 
         except Exception:
@@ -152,7 +161,7 @@ class ServiceListing(FtpBaseClass):
                                exc_info=True)
             raise
 
-    def __crate_data_frame(
+    def __create_data_frame(
             self,
             index='file_name'
     ) -> pandas.DataFrame:
@@ -194,12 +203,10 @@ class ServiceSender(ServiceListing):
             self,
             # Params for an instance of the ServiceSender current class
             settings: ServiceSettings,
-
             # Params for an instance of the ServiceListing parent class
             listing_paths: Routes,
             listing_server_queue: queues.Queue,
             listing_client_queue: queues.Queue,
-
             # Params for an instance of the ManagerFTP parent class
             config: FtpConnection,
             connection_ssl: bool | SSLContext
@@ -215,20 +222,11 @@ class ServiceSender(ServiceListing):
 
         self._settings = settings
         self._log = logging.getLogger(__class__.__name__)
-
-    @dataclass
-    class SendParams:
-        destination: str
-        path_client: str
-        path_server: str
-        file_name: str
-        file_size: str
-        validator: str
+        self._send_params = SendParams()
 
     def send_file(
             self,
             **params,
-
     ) -> bool:
         """
         Функция выполняет отправку и проверку файла по условию:
@@ -255,158 +253,210 @@ class ServiceSender(ServiceListing):
         """
 
         #
-        self.SendParams(**params)
+        for key, value in params.items():
+            self._send_params.__setattr__(key, value)
 
         try_count = 0
 
         try:
 
-            self.cwd(path=self.SendParams.path_server)
+            self.cwd(path=self._send_params.path_server)
 
             while try_count < self._settings.download_try_count:
 
                 self._log.debug(f'Инициализация отправки файла №{try_count}, '
-                                f'file_name={self.SendParams.file_name}, '
-                                f'path_client={self.SendParams.path_client}, '
-                                f'path_server={self.SendParams.path_server}, '
-                                f'destination={self.SendParams.destination}')
+                                f'file_name={self._send_params.file_name}, '
+                                f'path_client={self._send_params.path_client}, '
+                                f'path_server={self._send_params.path_server}, '
+                                f'destination={self._send_params.destination}')
 
-                match self.SendParams.destination:
+                match self._send_params.destination:
 
                     # Отправка файла с сервера в сторону клиента
-                    case self.mode_client:
+                    case self.MODE_CLIENT:
 
                         if (self.retr(
-                                path=self.SendParams.path_client,
-                                file_name=self.SendParams.file_name
-                        ) and self.SendParams.file_size == self.get_size(
-                            mode=self.SendParams.destination,
-                            path=self.SendParams.path_client,
-                            file_name=self.SendParams.file_name
+                                path=self._send_params.path_client,
+                                file_name=self._send_params.file_name
+                        ) and self._send_params.file_size == self.get_size(
+                            mode=self._send_params.destination,
+                            path=self._send_params.path_client,
+                            file_name=self._send_params.file_name
                         ) and self.retr(
-                            path=self.SendParams.path_client,
-                            file_name=(self.SendParams.file_name + self.SendParams.validator)
+                            path=self._send_params.path_client,
+                            file_name=(self._send_params.file_name + self._send_params.validator)
                         )
                         ):
 
                             self._log.info(f'Передача файла завершена успешно, '
-                                           f'file_name={self.SendParams.file_name}, '
-                                           f'path_client={self.SendParams.path_client}, '
-                                           f'path_server={self.SendParams.path_server}, '
-                                           f'destination={self.SendParams.destination}')
+                                           f'file_name={self._send_params.file_name}, '
+                                           f'path_client={self._send_params.path_client}, '
+                                           f'path_server={self._send_params.path_server}, '
+                                           f'destination={self._send_params.destination}')
                             return True
 
                         else:
 
                             self._log.info(f'Не удалось передать файл попытка №{try_count}, '
-                                           f'file_name={self.SendParams.file_name}, '
-                                           f'path_client={self.SendParams.path_client}, '
-                                           f'path_server={self.SendParams.path_server}, '
-                                           f'destination={self.SendParams.destination}')
+                                           f'file_name={self._send_params.file_name}, '
+                                           f'path_client={self._send_params.path_client}, '
+                                           f'path_server={self._send_params.path_server}, '
+                                           f'destination={self._send_params.destination}')
 
                             try_count += 1
+                            continue
 
                     # Отправка файла с клиента в сторону сервера
-                    case self.mode_server:
+                    case self.MODE_SERVER:
 
                         if (self.stor(
-                            path=self.SendParams.path_server,
-                            file_name=self.SendParams.file_name
-                        ) and self.SendParams.file_name == self.get_size(
-                            mode=self.SendParams.destination,
-                            path=self.SendParams.path_server,
-                            file_name=self.SendParams.file_name
+                            path=self._send_params.path_server,
+                            file_name=self._send_params.file_name
+                        ) and self._send_params.file_name == self.get_size(
+                            mode=self._send_params.destination,
+                            path=self._send_params.path_server,
+                            file_name=self._send_params.file_name
                         ) and self.stor(
-                            path=self.SendParams.path_server,
-                            file_name=(self.SendParams.file_name + self.SendParams.validator)
+                            path=self._send_params.path_server,
+                            file_name=(self._send_params.file_name + self._send_params.validator)
                         )
                         ):
 
                             self._log.info(f'Передача файла завершена успешно, '
-                                           f'file_name={self.SendParams.file_name}, '
-                                           f'path_client={self.SendParams.path_client}, '
-                                           f'path_server={self.SendParams.path_server}, '
-                                           f'destination={self.SendParams.destination}')
+                                           f'file_name={self._send_params.file_name}, '
+                                           f'path_client={self._send_params.path_client}, '
+                                           f'path_server={self._send_params.path_server}, '
+                                           f'destination={self._send_params.destination}')
                             return True
 
                         else:
 
                             self._log.info(f'Не удалось передать файл попытка №{try_count}, '
-                                           f'file_name={self.SendParams.file_name}, '
-                                           f'path_client={self.SendParams.path_client}, '
-                                           f'path_server={self.SendParams.path_server}, '
-                                           f'destination={self.SendParams.destination}')
+                                           f'file_name={self._send_params.file_name}, '
+                                           f'path_client={self._send_params.path_client}, '
+                                           f'path_server={self._send_params.path_server}, '
+                                           f'destination={self._send_params.destination}')
 
                             try_count += 1
+                            continue
 
             self._log.error(f'Закончились попытки передачи файла, в текущей итерации он будет пропущен '
-                            f'file_name={self.SendParams.file_name}, '
-                            f'path_client={self.SendParams.path_client}, '
-                            f'path_server={self.SendParams.path_server}, '
-                            f'destination={self.SendParams.destination}')
+                            f'file_name={self._send_params.file_name}, '
+                            f'path_client={self._send_params.path_client}, '
+                            f'path_server={self._send_params.path_server}, '
+                            f'destination={self._send_params.destination}')
 
             return False
 
         except Exception:
             self._log.critical(f'Ошибка при попытке отправки документа '
-                               f'file_name={self.SendParams.file_name}, '
-                               f'path_client={self.SendParams.path_client}, '
-                               f'path_server={self.SendParams.path_server}, '
-                               f'destination={self.SendParams.destination}')
+                               f'file_name={self._send_params.file_name}, '
+                               f'path_client={self._send_params.path_client}, '
+                               f'path_server={self._send_params.path_server}, '
+                               f'destination={self._send_params.destination}')
+
+            return False
 
     def del_file(
             self,
-            doc_name,
-            path_from,
-            mode
+            **params
     ):
+        del_params = SendParams(**params)
+        #
+        # Поскольку параметр destination определяет направление в котором расположен endpoint
+        # то при отправке файла с FTP сервера в сторону клиента, параметр destination='client'
+        # но удалить файл необходимо на стороне сервера, в связи с этим метод del_file
+        # принимает параметр destination реверсивно
+        #
+        if del_params.destination == self.MODE_CLIENT:
+            del_params.__setattr__('destination', self.MODE_SERVER)
+
+        elif del_params.destination == self.MODE_SERVER:
+            del_params.__setattr__('destination', self.MODE_CLIENT)
+
 
         try_count = 0
 
         while try_count < self._settings.download_try_count:
 
             self._log.debug(f'Попытка удаления №{try_count}, '
-                            f'file_name={doc_name}, '
-                            f'path={path_from}, '
-                            f'mode={mode}')
+                            f'file_name={del_params.file_name}, '
+                            f'path_client={del_params.path_client}, '
+                            f'path_server={del_params.path_server}, '
+                            f'destination={del_params.destination}')
 
             try:
-                match mode:
 
-                    case self.mode_server:
-                        result = self._connection.delete(doc_name)
-                        self._log.debug(f'ftplib.delete(doc_name): result={result}')
+                match del_params.destination:
 
-                    case self.mode_client:
-                        remove(os.path.join(path_from, doc_name))
+                    case self.MODE_SERVER:
+                        result = self._connection.delete(del_params.file_name)
+                        self._log.debug(f'ftplib.delete({del_params.file_name}): result={result}')
+
+                    case self.MODE_CLIENT:
+                        remove(join(del_params.path_client, del_params.file_name))
 
             except Exception:
                 try_count += 1
                 self._log.error(f'Ошибка при удалении файла! '
-                                f'try_count={try_count}'
-                                f'file_name={doc_name}, '
-                                f'path={path_from}, '
-                                f'mode={mode}')
+                                f'file_name={del_params.file_name}, '
+                                f'path_client={del_params.path_client}, '
+                                f'path_server={del_params.path_server}, '
+                                f'destination={del_params.destination}')
 
             else:
                 self._log.info(f'Удаление файла выполнено успешно, '
-                               f'file_name={doc_name}, '
-                               f'path={path_from}, '
-                               f'mode={mode}')
+                                f'file_name={del_params.file_name}, '
+                                f'path_client={del_params.path_client}, '
+                                f'path_server={del_params.path_server}, '
+                                f'destination={del_params.destination}')
                 return True
 
         self._log.critical(f'!critical!\n'
-                           f'Файл не был успешно удален, закончились попытки, остановка и пересоздание подпроцесса'
+                           f'Файл не был успешно удален, закончились попытки, '
+                           f'остановка и пересоздание подпроцесса'
                            f'try_count={try_count}'
-                           f'file_name={doc_name}, '
-                           f'path={path_from}, '
-                           f'mode={mode}')
+                            f'file_name={del_params.file_name}, '
+                            f'path_client={del_params.path_client}, '
+                            f'path_server={del_params.path_server}, '
+                            f'destination={del_params.destination}')
 
         raise Exception
 
     def send_files(
             self,
             destination,
-            path_server,
-
+            files_list: pandas.DataFrame
     ):
+        kwargs = dict()
+        kwargs.update({'validator': self._settings.validator,
+                       'destination': destination})
+
+        if destination == self.MODE_SERVER:
+            kwargs.update({'path_client': self.listing_paths.from_client_to_server.client_path})
+            kwargs.update({'path_server': self.listing_paths.from_client_to_server.server_path})
+
+        elif destination == self.MODE_CLIENT:
+            kwargs.update({'path_client': self.listing_paths.from_server_to_client.client_path})
+            kwargs.update({'path_server': self.listing_paths.from_server_to_client.server_path})
+
+        else:
+            return False
+
+        for index, row in files_list.iterrows():
+
+            kwargs.update({'file_name': row['file_name'],
+                           'file_size': row['file_size']})
+
+            if self.send_file(**kwargs) and not row['control_check']:
+
+                files_list.loc[index, 'control_check'] = self.del_file(**kwargs)
+                self._log.info(f'Отправка документа {row["file_name"]} завершена успешно')
+                files_list = files_list.drop(index)
+
+            else:
+
+                return files_list.count()
+
+        return True
+

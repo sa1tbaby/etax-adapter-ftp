@@ -30,7 +30,7 @@ class Timer:
 
     def timer(self, timer_delay: int, timer_name: str):
 
-        if round( time.perf_counter() - float(self.__timers_list[timer_name]), 2 ) > int(timer_delay):
+        if round(time.perf_counter() - float(self.__timers_list[timer_name]), 2 ) > int(timer_delay):
             self.__timers_list[timer_name] = str(time.perf_counter())
             self.loger_timer.info(f'timer {timer_name}: was triggered, start time has been overwrite')
             return True

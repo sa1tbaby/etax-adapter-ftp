@@ -1,9 +1,22 @@
 import os.path
+
+import pandas
 from pandas import DataFrame
 from pydantic import BaseModel, field_validator
 from typing import List, Any
 from ssl import SSLContext, PROTOCOL_TLS_SERVER
-from OpenSSL.crypto import load_pkcs12, dump_certificate, dump_privatekey, FILETYPE_PEM
+from OpenSSL.crypto import dump_certificate, dump_privatekey, FILETYPE_PEM
+from dataclasses import dataclass
+
+
+@dataclass
+class SendParams:
+    path_client: str = None
+    path_server: str = None
+    file_name: str = None
+    file_size: int = None
+    validator: str = None
+    destination: str = None
 
 class MyBaseModel(BaseModel):
     """
@@ -126,19 +139,12 @@ class ServiceSettings(MyBaseModel):
     Модель для хранения настроек бизнес логики самого сервиса
     """
 
-    script_delay_timer: int
-    script_listing_timer_os: int
-    script_listing_timer_ftp: int
-    script_dwnld_timer: int
-    script_restart_timer: int
+    main_health_check_timer: int
+    dwnld_timer: int
+    app_sleep_timer: int
+    app_restart_timer: int
     download_try_count: int
-
-    @field_validator('*')
-    @classmethod
-    def value_type_validate(cls, item):
-        if isinstance(item, str):
-            item = int(item)
-        return item
+    validator: str
 
 
 class Listing(MyBaseModel):
@@ -146,7 +152,7 @@ class Listing(MyBaseModel):
     Модель для хранения и валидации листинга
     """
 
-    files_list: List | None
+    files_list: List | None | pandas.DataFrame
 
     @field_validator('files_list')
     @classmethod

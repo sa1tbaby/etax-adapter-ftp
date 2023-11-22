@@ -9,7 +9,7 @@
     "logger_setting": {
       "log_level": 10,
       "log_path": "logs",
-      "file_mode": "w",
+      "file_mode": "a",
       "format": "__%(name)s__: %(asctime)s __%(levelname)s__   \n%(message)s"
     }
   },
@@ -28,12 +28,11 @@
     }
   },
   "settings": {
-    "script_delay_timer":15,
-    "script_listing_timer_os":6,
-    "script_listing_timer_ftp":6,
-    "script_dwnld_timer":12,
-    "main_sleep_timer":6,
-    "script_restart_timer":20,
+    "validator": ".done",
+    "main_health_check_timer":15,
+    "dwnld_timer":12,
+    "app_sleep_timer":6,
+    "app_restart_timer":20,
     "try_count": 3,
     "logs_path":"logs",
     "logs_file":"log.txt",

@@ -1,18 +1,48 @@
+import time
 from dataclasses import dataclass
 from pydantic import BaseModel
+from functools import wraps
 
+space = {}
+
+
+def decor(func):
+    def _wrap(*args, **kwargs):
+
+        start = time.time()
+        result = func(*args, **kwargs)
+
+        return result, time.time() - start
+
+    return _wrap
 
 class Test1:
 
-    @dataclass
-    class Test2:
-        test3: str = '2'
-        test5: str = '3'
+    def __init__(self):
+        self.counter = None
 
-    def test4(self, **argss):
-        print(self.Test2.test3)
+    @decor
+    def asdasf(self, a):
 
-ss = Test1()
+        c = 0
 
-ss.test4(test3='val3', test5='val5')
-print(ss.Test2.test3)
+        while c < 100000000000:
+            c = a+c
+
+        return c
+
+
+
+
+
+if __name__ == '__main__':
+    ss = Test1()
+
+    asdasd = ss.asdasf(200)
+
+
+    print(asdasd)
+
+
+
+

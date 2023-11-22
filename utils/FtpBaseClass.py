@@ -4,25 +4,28 @@ import logging
 from os.path import getsize, join
 
 from ssl import SSLContext
-from utils.models import FtpConnection
+from utils.Models import FtpConnection
 
 
-class FtpBaseClass:
+class FtpManager:
 
     # Параметры используемые для системного вызова методов внутри самого класса
-    mode_client = 'client'
-    mode_server = 'server'
+    MODE_CLIENT = 'client'
+    MODE_SERVER = 'server'
 
     """
         Класс для работы с FTP
 
         * def cwd - смена каталога
-        * def get_list_from_os - получение листинга документов из ос
-        * def get_list_from_ftp - получение листинга документов из FTP
         * def get_size - Получение размера файла
-        * def retr - Получение документа с FTP
         * def stor - Отправка документа на FTP
-        """
+        * def retr - Получение документа с FTP
+        * def _check_path -
+        * def _connect_ftp -
+        * def _get_list - 
+        * def __crate_data_frame -  
+        
+    """
 
     def __init__(
             self,
@@ -38,9 +41,9 @@ class FtpBaseClass:
         """
 
         self._log: logging.Logger = logging.getLogger(__class__.__name__)
-        self._connection: ftplib.FTP | ftplib.FTP_TLS = self.__connect_ftp(connection_ssl)
+        self._connection: ftplib.FTP | ftplib.FTP_TLS = self._connect_ftp(connection_ssl)
 
-        self.__config: FtpConnection = config
+        self._config: FtpConnection = config
         self.__config_log: dict = config.config_log
 
     def __new__(
@@ -67,13 +70,13 @@ class FtpBaseClass:
         try:
 
             # Меняем директорию FTP, на необходимый каталог, если мы уже не в нем
-            if self.__check_path(path=path):
+            if self._check_path(path=path):
                 self._connection.cwd(path)
-                self._log.info(f'{self.__config_log["INFO_03"]} {path}')
+                self._log.info(f'Current directory successfully changed to {path}')
 
         except Exception:
             # raised when an unexpected reply is received from the server.
-            self._log.critical(msg=self.__config_log["CRITICAL_02"],
+            self._log.critical(msg='Something wet wrong when FTP manager try to change ftp directory',
                                exc_info=True)
 
             raise
@@ -90,7 +93,7 @@ class FtpBaseClass:
         что текущая директория FTP адаптера, совпадает с той
         в которой находится файл file_name='file_name'
 
-        :param mode: Параметр среды, FTP или OS
+        :param mode: Параметр среды, FTP server или OS client
         :param path: По умолчанию None, требуется только для mode='os'
         :param file_name:
         :return: size: int, -1 при неудаче
@@ -98,16 +101,17 @@ class FtpBaseClass:
 
         match mode:
 
-            case self.mode_server:
+            case self.MODE_SERVER:
 
                 try:
                     return self._connection.size(file_name)
 
                 except Exception:
-                    self._log.error(msg=f'{self.__config_log["ERROR_04"]} {file_name}', exc_info=True)
+                    self._log.error(msg=f'Something wet wrong when FTP manager try to get size'
+                                        f'of file {file_name}, from FTP server ', exc_info=True)
                     return -1
 
-            case self.mode_client:
+            case self.MODE_CLIENT:
 
                 try:
 
@@ -116,8 +120,8 @@ class FtpBaseClass:
                     )
 
                 except Exception:
-                    self._log.error(msg=f'{self.__config_log["ERROR_05"]} {file_name}',
-                                    exc_info=True)
+                    self._log.error(msg=f'Something wet wrong when FTP manager try to get size'
+                                        f'of file {file_name}, from client OS ', exc_info=True)
                     return -1
 
     def retr(
@@ -128,8 +132,7 @@ class FtpBaseClass:
         """
         Переопределение метода retr либы ftplib, для скачивания файла с FTP сервера
         Метод принимает путь к файлу для сохранения на стороне клиента и имя файла
-        Файл сохраняется с таким же именем с которым он
-        и загружается на сервер
+        Файл сохраняется с таким же именем с которым он был на сервер
 
         :param path:
         :param file_name:
@@ -144,17 +147,18 @@ class FtpBaseClass:
             ) as file:
 
                 try:
+
                     self._connection.retrbinary(f"RETR {file_name}", file.write)
 
                 except Exception:
-                    self._log.error(msg=f'{self.__config_log["ERROR_06"]} {file_name}',
-                                    exc_info=True)
+                    self._log.error(msg=f'Something wet wrong when FTP manager try to retrieve data in binary format'
+                                        f'from file {file_name}, in FTP server to OS client', exc_info=True)
                     return False
 
         except Exception:
 
-            self._log.error(msg=f'{self.__config_log["ERROR_07"]}\n{join(path, file_name)}',
-                            exc_info=True)
+            self._log.error(msg=f'Something wet wrong when FTP manager try to download file '
+                                f'{file_name} from FTP server and record in OS client', exc_info=True)
             return False
 
         else:
@@ -185,20 +189,20 @@ class FtpBaseClass:
 
                 except Exception:
 
-                    self._log.error(msg=f'{self.__config_log["ERROR_08"]} {file_name}',
-                                    exc_info=True)
+                    self._log.error(msg=f'Something wet wrong when FTP manager try to store data in binary format'
+                                        f'from file {file_name}, on OS client server to FTP server', exc_info=True)
                     return False
 
         except Exception:
 
-            self._log.error(msg=f'{self.__config_log["ERROR_09"]}\n{join(path, file_name)}',
-                            exc_info=True)
+            self._log.error(msg=f'Something wet wrong when FTP manager try to upload file '
+                                f'{file_name} from OS client and record in FTP server', exc_info=True)
             return False
 
         else:
             return True
 
-    def __check_path(
+    def _check_path(
             self,
             path
     ) -> bool:
@@ -217,7 +221,7 @@ class FtpBaseClass:
 
             else:
 
-                self._log.debug(msg=f'{self.__config_log["DEBUG_02"]} {path}')
+                self._log.debug(msg=f'Current ftp dir has matches with dir  {path}')
                 return False
 
         except Exception:
@@ -225,7 +229,7 @@ class FtpBaseClass:
                                exc_info=True)
             raise
 
-    def __connect_ftp(
+    def _connect_ftp(
             self,
             connection_ssl: bool | SSLContext
     ) -> ftplib.FTP | ftplib.FTP_TLS:
@@ -235,11 +239,11 @@ class FtpBaseClass:
             try:
 
                 connection = ftplib.FTP(
-                    host=self.__config.host,
-                    user=self.__config.user_name,
-                    passwd=self.__config.password,
-                    acct=self.__config.acct,
-                    timeout=self.__config.time_out
+                    host=self._config.host,
+                    user=self._config.user_name,
+                    passwd=self._config.password,
+                    acct=self._config.acct,
+                    timeout=self._config.time_out
                 )
 
                 self._log.info(f'{self.__config_log["INFO_04"]}'
@@ -261,13 +265,13 @@ class FtpBaseClass:
             try:
 
                 connection = ftplib.FTP_TLS(
-                    host=self.__config.host,
-                    user=self.__config.user_name,
-                    passwd=self.__config.password,
-                    acct=self.__config.acct,
-                    timeout=self.__config.time_out,
-                    certfile=self.__config.cert_file,
-                    keyfile=self.__config.key_file,
+                    host=self._config.host,
+                    user=self._config.user_name,
+                    passwd=self._config.password,
+                    acct=self._config.acct,
+                    timeout=self._config.time_out,
+                    certfile=self._config.cert_file,
+                    keyfile=self._config.key_file,
                     context=connection_ssl
                 )
 
@@ -287,6 +291,7 @@ class FtpBaseClass:
                                    exc_info=True)
                 raise
 
+
     @property
     def get_connection(
             self
@@ -297,5 +302,5 @@ class FtpBaseClass:
     def get_config(
             self
     ):
-        return self.__config
+        return self._config
 
