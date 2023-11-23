@@ -131,13 +131,4 @@ class Cypher:
 
 if __name__ == "__main__":
 
-    with open('app/configs/config_decode.json', 'rb') as file:
-        text = file.read()
-
-    cypher = Cypher()
-    print(cypher.load_keys(direrctory='app/configs'))
-
-    text = cypher.encrypt(text)
-
-    with open('app/configs/config.json', 'wb') as file:
-        file.write(text)
+    pass

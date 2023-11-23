@@ -5,7 +5,7 @@ from os.path import pardir, join, abspath
 log_app = logging.getLogger('app')
 
 PROJECT_DIR = abspath(pardir)
-CONFIG_FILE = ('configs', 'config_decode.json')
+CONFIG_FILE = ('configs', 'config.json')
 CONFIG_FILE = join(PROJECT_DIR, CONFIG_FILE[0], CONFIG_FILE[1])
 
 try:

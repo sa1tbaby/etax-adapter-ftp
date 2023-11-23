@@ -1,1 +1,40 @@
-gAAAAABk8DdQtM0NvjdnoUgcXPUHMVJY9f7q1tJ4cwXKP43ZUj_q3fiTdyqlnfXm3n39fs_gN1cX2yEF9uR9S0pkhlvFS4q32NZHWPjF0f0AV8q0l_rk6_sfhPPfWvkCgsMT-m6TpNfkbNg2QjoYk8m4M0VkyQ0aizTBdpc68PEm4Ikl1dNC90G55L0KTwj3dRU4uq6vGsQ41tYQW0enDyomZ2ROJO-374QiyvbHEKFP5DlCKi14Ymh8TOHwnJN7QidWmXqzXRfIRne8vdwfl3XL3bLaF1Z4W_l9XNsXi6_l5gcP6gInGefRVfCxFb3Lmls1qBiTW8uz13oEDZN1tawqeFxl1cYoJLzXhuWHjFbogyYtAzA9YeUKkCct6YCpiK5iEtbVu5p6xMK_5sYgrkZuE23SOexaZwqQkwp4D8ibyBBa6__WXQgKu0g6rMWXbwUPI03cAy31ASxE2rf_OGJepWxBbSgggGGyXZFrYLlnlLjeyTFRaUQBYwCklFnafq5UYzMKVkJMfA9ONfju6XuMhz5zeAyI_RiGZJTAVmiOWlohyws6uiPB-WQFRQ7yWdWrA40fGtPAOr9uXEyCJkDXr2MJibzC0qFU8cjiaDlleqCRJlDOS6tek6HYEJDIua2wySaTBDfAbB9cU2mwUM5x_2x8xJvFI8vc-cBEzKvpuLrwUSy_zu1tDIPAqLzJ9gXVvOk_UVGFQmVrz1qfvceG6i9aIwtQ06ajarTPIHbIySrOeels21Qv2m6Bq7tawK8gye4_9vYSkJ2jcbLzKwuDYaoXLLRGFaCkPAet0eJSBC8W4mz_Sco2uLpN1lHivMzysQvhPYTtrZ8rkjgLUaqBbcHBxh7XwICgpEieuWCmeVSzfLY7L5TYtG3EJyThiMSGKhXOGdnFLf5tx6sYlD4-Vw8JnFahePh0qPa_BUG35ZfgSEtBtkPHAfOoTi5spHuLsvBDIEt3UVdfKsT6cTwVr7gbWvzSy_bHdGNjbTZEZSOCqXOw8Yuk49A44sAepI7bVFNq2nzkA3-pk9UMJZvBZUDobOJOBndhVyx1N0080ujHqi1AyJwnM8QOkWXXfdobEFE8vm222gLMv5K_wnPSYj9-5xOkQIf-kikAcNOma1OuBKvbIEA0KFibSVLRMfHbvpvgoin_LBFq4yPJi-PbTCjq3E_2uMR2opAzVbuP3VzTbbmU0FHfLnm5moV7YPiVVQq9JTxixBIHwYrFxB5q4B2edLizhpQY9hBmEfdoIPtJ8cpJleaFPdtpH1QZ45FA1BsO0-fg52tS_vGSwgYBJmu6mgiCvYyREWAyOc4FGYN1tDZevrKk7SFtbAAdFgtrgPzxZlCjVG-foL67bpnx_Ak68nEd_Z53A_1oZbQg091SLb5eIQOTLA7BYDbwuIbRhHJdKBpja6qiG3haZ8jvvvJQLaJRf-jCMbq47EdXiG4gw9bfCWm5ld7NQKcoxAPXihuUHnfZ
+{
+  "ftp_connection": {
+    "password": "sc99usr_QWE123",
+    "user_name": "sc99usr",
+    "host": "tkles-tfs000024.vm.esrt.cloud.sbrf.ru",
+    "time_out": 10,
+    "acct": "",
+    "cert_key": "/distr2/new_cert_2022/00CA0001CTFSkorususr_22.key",
+    "cert_path": "/distr2/new_cert_2022/00CA0001CTFSkorususr.pem",
+    "cert_pass": "",
+    "cert_obj": ""
+
+  },
+  "logger_setting": {
+      "level": 10,
+      "filename": ["logs", "app_log.txt"],
+      "filemode": "a",
+      "format": "__%(name)s__: %(asctime)s __%(levelname)s__   \n%(message)s"
+  },
+  "route": {
+    "send_to_server": {
+      "client":"/Config/FromFNS",
+      "server":"/file_shares/SO/from/EDOSORT/FilesfromFNS"
+    },
+    "get_from_server": {
+      "server":"/file_shares/SO/to/EDOSORT/FilesforFNS",
+      "client":"/Config/ForFNS"
+    }
+  },
+  "settings": {
+    "main_health_check_timer":15,
+    "app_dwnld_timer_client":12,
+    "app_dwnld_timer_server":12,
+    "app_sleep_timer":6,
+    "app_restart_timer":20,
+    "try_count": 3,
+    "validator": ".done"
+  }
+}
+

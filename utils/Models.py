@@ -74,6 +74,9 @@ class FtpConnection(MyBaseModel):
         if type(item) is SSLContext:
             return item
 
+        elif item == 'None' or '':
+            return None
+
         with open(cls.cert_path, 'rb') as file:
             PEM_cert = dump_certificate(
                 FILETYPE_PEM,

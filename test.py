@@ -137,7 +137,7 @@ def test22():
     print(spisok)
 
 def testttt():
-    CONFIG_FILE = ('configs', 'config_decode.json')
+    CONFIG_FILE = ('configs', 'config.json')
     CONFIG_FILE = join(abspath(pardir), CONFIG_FILE[0], CONFIG_FILE[1])
 
     with open(CONFIG_FILE, 'r') as file:
