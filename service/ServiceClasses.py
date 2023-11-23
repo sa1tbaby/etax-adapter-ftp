@@ -34,9 +34,8 @@ class ServiceListing(FtpManager):
             config: FtpConnection,
             connection_ssl: bool | SSLContext
     ):
-
-
-        super().__init__(
+        FtpManager.__init__(
+            self=self,
             config=config,
             connection_ssl=connection_ssl,
         )
@@ -131,7 +130,8 @@ class ServiceListing(FtpManager):
                     # получаем список файлов из директории FTP
                     files = self._connection.nlst()
 
-                    self._log.debug(f'{self.__config_log["INFO_06"]} {len(files)}')
+                    self._log.debug(f'Successfully get list of file from server '
+                                    f'count of file = {len(files)}')
 
             for iteration, file_name in enumerate(files):
 
@@ -157,7 +157,8 @@ class ServiceListing(FtpManager):
             return self.listing
 
         except Exception:
-            self._log.critical(msg=f'{self.__config_log["CRITICAL_01"]}{mode}/{path}',
+            self._log.critical(msg=f'Caught exception in get_list scope during try to get'
+                                   f'list of files from location/dir={mode}/{path}',
                                exc_info=True)
             raise
 
@@ -188,12 +189,13 @@ class ServiceListing(FtpManager):
 
         except Exception:
 
-            self._log.critical(msg=self.__config_log["ERROR_03"],
+            self._log.critical(msg='Caught exception in __create_data_frame '
+                                   'scope during create base DataFrame',
                                exc_info=True)
             raise
 
         else:
-            self._log.debug(msg=self.__config_log["DEBUG_01"])
+
             return files_list
 
 
@@ -211,7 +213,9 @@ class ServiceSender(ServiceListing):
             config: FtpConnection,
             connection_ssl: bool | SSLContext
     ):
-        super().__init__(
+
+        ServiceListing.__init__(
+            self=self,
             listing_paths=listing_paths,
             listing_server_queue=listing_server_queue,
             listing_client_queue=listing_client_queue,

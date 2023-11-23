@@ -39,11 +39,9 @@ class FtpManager:
 
         :param connection_ssl: Параметр защищенного подключения к FTP серверу
         """
-
+        self._config: FtpConnection = config
         self._log: logging.Logger = logging.getLogger(__class__.__name__)
         self._connection: ftplib.FTP | ftplib.FTP_TLS = self._connect_ftp(connection_ssl)
-
-        self._config: FtpConnection = config
 
     def __new__(
             cls,

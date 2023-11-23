@@ -30,7 +30,9 @@ try:
         level=logger_settings.get('level'),
         filename=logger_filename,
         filemode=logger_settings.get('filemode'),
-        format=logger_settings.get('format')
+        format=logger_settings.get('format'),
+        encoding='utf-8'
+
     )
 
     del logger_filename, CONFIG, config_file

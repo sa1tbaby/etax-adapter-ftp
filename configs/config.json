@@ -1,8 +1,8 @@
 {
   "ftp_connection": {
-    "password": "sc99usr_QWE123",
-    "user_name": "sc99usr",
-    "host": "tkles-tfs000024.vm.esrt.cloud.sbrf.ru",
+    "password": "cesium",
+    "user_name": "cesium",
+    "host": "192.168.1.170",
     "time_out": 10,
     "acct": "None",
     "cert_key": "None",
@@ -15,7 +15,7 @@
       "level": 10,
       "filename": ["logs", "app_log.txt"],
       "filemode": "a",
-      "format": "__%(name)s__: %(asctime)s __%(levelname)s__   \n%(message)s"
+      "format": "\n__%(name)s__: %(asctime)s __%(levelname)s__   \n%(message)s"
   },
   "route": {
     "from_client_to_server": {

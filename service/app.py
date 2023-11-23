@@ -9,7 +9,7 @@ from json import load
 from utils.Models import ServiceSettings, Routes, FtpConnection
 from service import log_app
 
-from utils.Decorators import timer
+from utils.Decorators import AditionalTimer
 from utils.func import put_in_queue
 
 
@@ -40,7 +40,7 @@ def start_app(
 
         put_in_queue(APP_STATUS_QUEUE, 'IDLE')
 
-        @timer(SETTINGS.model_dump(), func_list)
+        @AditionalTimer(SETTINGS.model_dump(), func_list)
         def app_dwnld_timer_client():
 
             put_in_queue(APP_STATUS_QUEUE, 'SLAVE')
@@ -54,7 +54,7 @@ def start_app(
 
             return result
 
-        @timer(SETTINGS.model_dump(), func_list)
+        @AditionalTimer(SETTINGS.model_dump(), func_list)
         def app_dwnld_timer_server():
 
             put_in_queue(APP_STATUS_QUEUE, 'SLAVE')
@@ -68,7 +68,7 @@ def start_app(
 
             return result
 
-        @timer(SETTINGS.model_dump(), func_list)
+        @AditionalTimer(SETTINGS.model_dump(), func_list)
         def app_restart_timer():
 
             app.get_connection.close()
