@@ -9,7 +9,6 @@ from os.path import pardir, join, abspath
 from json import load
 import os
 
-from Models import LoggerSettings
 
 class ttt:
     def __init__(self):

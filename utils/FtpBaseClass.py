@@ -44,7 +44,6 @@ class FtpManager:
         self._connection: ftplib.FTP | ftplib.FTP_TLS = self._connect_ftp(connection_ssl)
 
         self._config: FtpConnection = config
-        self.__config_log: dict = config.config_log
 
     def __new__(
             cls,
@@ -225,7 +224,8 @@ class FtpManager:
                 return False
 
         except Exception:
-            self._log.critical(msg=self.__config_log["CRITICAL_03"],
+            self._log.critical(msg='Caught exception in _check_path scope during '
+                                   'try to compare cur and next path',
                                exc_info=True)
             raise
 
@@ -234,36 +234,9 @@ class FtpManager:
             connection_ssl: bool | SSLContext
     ) -> ftplib.FTP | ftplib.FTP_TLS:
 
-        if connection_ssl is bool:
+        if connection_ssl:
 
             try:
-
-                connection = ftplib.FTP(
-                    host=self._config.host,
-                    user=self._config.user_name,
-                    passwd=self._config.password,
-                    acct=self._config.acct,
-                    timeout=self._config.time_out
-                )
-
-                self._log.info(f'{self.__config_log["INFO_04"]}'
-                               f'\n{connection.welcome}'
-                               f'\n{connection.port}'
-                               f'\n{connection.sock}'
-                               f'\n{connection.lastresp}')
-
-                return connection
-
-            except Exception:
-
-                self._log.critical(msg=self.__config_log["CRITICAL_04"],
-                                   exc_info=True)
-                raise
-
-        else:
-
-            try:
-
                 connection = ftplib.FTP_TLS(
                     host=self._config.host,
                     user=self._config.user_name,
@@ -277,7 +250,7 @@ class FtpManager:
 
                 connection.prot_p()
 
-                self._log.info(f'{self.__config_log["INFO_05"]}'
+                self._log.info(f'FTP over TLS connection was successfully established'
                                f'\n{connection.welcome}'
                                f'\n{connection.port}'
                                f'\n{connection.sock}'
@@ -287,7 +260,34 @@ class FtpManager:
 
             except Exception:
 
-                self._log.critical(msg=self.__config_log["CRITICAL_05"],
+                self._log.critical(msg='Caught exception in _connect_ftp scope '
+                                       'during try to established FTP TLS connection ',
+                                   exc_info=True)
+                raise
+
+        else:
+
+            try:
+                connection = ftplib.FTP(
+                    host=self._config.host,
+                    user=self._config.user_name,
+                    passwd=self._config.password,
+                    acct=self._config.acct,
+                    timeout=self._config.time_out
+                )
+
+                self._log.info(f'FTP connection was successfully established'
+                               f'\n{connection.welcome}'
+                               f'\n{connection.port}'
+                               f'\n{connection.sock}'
+                               f'\n{connection.lastresp}')
+
+                return connection
+
+            except Exception:
+
+                self._log.critical(msg='Caught exception in _connect_ftp scope '
+                                       'during try to established FTP connection ',
                                    exc_info=True)
                 raise
 

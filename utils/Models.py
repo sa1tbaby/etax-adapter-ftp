@@ -54,7 +54,7 @@ class FtpConnection(MyBaseModel):
     @field_validator('*')
     @classmethod
     def __none_type_validate__(cls, item):
-        if item == 'None' or '':
+        if item is str and (item.upper() == 'NONE' or item == ''):
             return None
         return item
 
@@ -68,13 +68,16 @@ class FtpConnection(MyBaseModel):
     @field_validator('cert_obj')
     @classmethod
     def cert_validator(
-            cls, item
+            cls, item:str
     ) -> Any:
 
         if type(item) is SSLContext:
             return item
 
-        elif item == 'None' or '':
+        elif item is not str:
+            return None
+
+        elif item.upper() == 'NONE' or item == '':
             return None
 
         with open(cls.cert_path, 'rb') as file:
@@ -179,10 +182,10 @@ class Listing(MyBaseModel):
                 continue
 
             # Скипаем первый элемент, если второй является его дубликатом
-            if file_name == files_list.loc[iteration + 1, 'file_name']:
+            if file_name.upper() == files_list.loc[iteration + 1, 'file_name'].upper():
                 continue
 
-            if files_list.loc[iteration, 'file_size'] == -1:
+            if int(files_list.loc[iteration, 'file_size']) == -1:
                 files_list.drop([iteration], inplace=True)
 
             # Удаляем первый элемент, если он не соответствует второму
