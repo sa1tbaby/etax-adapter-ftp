@@ -100,9 +100,9 @@ class LoggerSettings(MyBaseModel):
     настройки логгера
     """
 
-    log_level: int
-    log_file: list
-    file_mode: str
+    level: int
+    filename: list
+    filemode: str
     format: str
 
 
@@ -152,7 +152,7 @@ class Listing(MyBaseModel):
     Модель для хранения и валидации листинга
     """
 
-    files_list: List | None | pandas.DataFrame
+    files_list: List | None
 
     @field_validator('files_list')
     @classmethod

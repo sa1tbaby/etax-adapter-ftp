@@ -3,22 +3,18 @@ from multiprocessing import Process, set_start_method, Queue
 from time import sleep
 from utils.Models import ServiceSettings, Routes, FtpConnection
 from utils.func import put_in_queue, script_status
-
-
-set_start_method('spawn')
+from service import log_app, CONFIG
+from os.path import pardir, join
 
 SETTINGS = ServiceSettings()
 LISTING_PATHS = Routes()
 LISTING_SERVER_QUEUE = Queue()
 LISTING_CLIENT_QUEUE = Queue()
 APP_STATUS_QUEUE = Queue()
-CONFIG = FtpConnection()
+FTP_CONFIG = FtpConnection()
 CONNECTION_SSL = False
 
-
-
-
-
+set_start_method('spawn')
 def main():
 
     main_process = Process()
@@ -34,7 +30,7 @@ def main():
                       LISTING_PATHS,
                       LISTING_SERVER_QUEUE,
                       LISTING_CLIENT_QUEUE,
-                      CONFIG,
+                      FTP_CONFIG,
                       CONNECTION_SSL,)
             )
 

@@ -5,6 +5,12 @@ import pandas
 
 from utils.Decorators import timer, AditionalTimer
 from multiprocessing import Process
+from os.path import pardir, join, abspath
+from json import load
+import os
+
+from Models import LoggerSettings
+
 class ttt:
     def __init__(self):
         self.tttt = self.SendParams()
@@ -130,8 +136,18 @@ def test22():
     spisok = spisok.split(',')
     print(spisok)
 
+def testttt():
+    CONFIG_FILE = ('configs', 'config_decode.json')
+    CONFIG_FILE = join(abspath(pardir), CONFIG_FILE[0], CONFIG_FILE[1])
 
+    with open(CONFIG_FILE, 'r') as file:
+        config = load(file)
+
+    asdsd = config.get('logger_setting')
+
+    dfffgf = LoggerSettings(**asdsd)
+    print(dfffgf)
 if __name__ == '__main__':
 
-    test_timer()
+    testttt()
 

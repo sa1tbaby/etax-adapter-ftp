@@ -19,7 +19,7 @@ def start_app(
     LISTING_SERVER_QUEUE: Queue,
     LISTING_CLIENT_QUEUE: Queue,
     APP_STATUS_QUEUE: Queue,
-    CONFIG: FtpConnection,
+    FTP_CONFIG: FtpConnection,
     CONNECTION_SSL
 ):
 
@@ -34,7 +34,7 @@ def start_app(
             listing_paths=LISTING_PATHS,
             listing_server_queue=LISTING_SERVER_QUEUE,
             listing_client_queue=LISTING_CLIENT_QUEUE,
-            config=CONFIG,
+            config=FTP_CONFIG,
             connection_ssl=CONNECTION_SSL
         )
 
@@ -42,26 +42,30 @@ def start_app(
 
         @timer(SETTINGS.model_dump(), func_list)
         def app_dwnld_timer_client():
+
             put_in_queue(APP_STATUS_QUEUE, 'SLAVE')
 
             destination = app.MODE_CLIENT
             listing = app.listing_from_server()
             result = app.send_files(destination, listing.files_list)
-            log_app.info(f'Download files from server was successfully end result={result}')
 
+            log_app.info(f'Download files from server was successfully end result={result}')
             put_in_queue(APP_STATUS_QUEUE, 'IDLE')
+
             return result
 
         @timer(SETTINGS.model_dump(), func_list)
         def app_dwnld_timer_server():
+
             put_in_queue(APP_STATUS_QUEUE, 'SLAVE')
 
             destination = app.MODE_SERVER
             listing = app.listing_from_client()
             result = app.send_files(destination, listing.files_list)
-            log_app.info(f'Upload files on server was successfully end result={result}')
 
+            log_app.info(f'Upload files on server was successfully end result={result}')
             put_in_queue(APP_STATUS_QUEUE, 'IDLE')
+
             return result
 
         @timer(SETTINGS.model_dump(), func_list)
@@ -69,9 +73,10 @@ def start_app(
 
             app.get_connection.close()
 
+            put_in_queue(APP_STATUS_QUEUE, 'DEAD')
             log_app.info('app_restart_timer was triggerd '
                          'current process will be kill and restart')
-            put_in_queue(APP_STATUS_QUEUE, 'DEAD')
+
 
             exit(-1073741510)
 
@@ -79,7 +84,7 @@ def start_app(
         log_app.critical('Caught a global exception from the '
                          'start_app scope during app instance init',
                          exc_info=True)
-        raise
+        exit(-1073741510)
 
     while True:
 

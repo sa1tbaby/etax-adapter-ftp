@@ -12,9 +12,9 @@
 
   },
   "logger_setting": {
-      "log_level": 10,
-      "log_file": ["logs", "app_log.txt"],
-      "file_mode": "a",
+      "level": 10,
+      "filename": ["logs", "app_log.txt"],
+      "filemode": "a",
       "format": "__%(name)s__: %(asctime)s __%(levelname)s__   \n%(message)s"
   },
   "route": {

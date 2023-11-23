@@ -426,7 +426,7 @@ class ServiceSender(ServiceListing):
     def send_files(
             self,
             destination,
-            files_list: pandas.DataFrame
+            files_list: pandas.DataFrame | list
     ):
         kwargs = dict()
         kwargs.update({'validator': self._settings.validator,
