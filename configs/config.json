@@ -19,20 +19,21 @@
   },
   "route": {
     "from_client_to_server": {
-      "client_path":"/Config/FromFNS",
-      "server_path":"/file_shares/SO/from/EDOSORT/FilesfromFNS"
+      "client_path":"/FILES_FOR_FTP",
+      "server_path":"/home/cesium/FILES_FOR_CLIENT"
     },
     "from_server_to_client": {
-      "client_path":"/Config/ForFNS",
-      "server_path":"/file_shares/SO/to/EDOSORT/FilesforFNS"
+      "client_path":"/FILES_FOR_FTP",
+      "server_path":"/home/cesium/FILES_FOR_CLIENT"
     }
   },
   "settings": {
-    "main_health_check_timer":15,
-    "app_dwnld_timer_client":12,
-    "app_dwnld_timer_server":12,
-    "app_sleep_time":6,
-    "app_restart_timer":20,
+    "main_health_check_timer":3,
+    "app_dwnld_timer_client":30,
+    "app_dwnld_timer_server":30,
+    "app_sleep_time":10,
+    "app_restart_timer":3600,
+    "log_rotate_timer": 604800,
     "download_try_count": 3,
     "validator": ".done"
   }

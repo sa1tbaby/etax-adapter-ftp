@@ -3,7 +3,7 @@ import time
 
 import pandas
 
-from utils.Decorators import timer, AditionalTimer
+from utils.Decorators import timer, AdditionalTimer
 from multiprocessing import Process
 from os.path import pardir, join, abspath
 from json import load
@@ -94,12 +94,12 @@ def test_timer():
     res = False
 
 
-    @AditionalTimer(config=config, obj_list=obj_list)
+    @AdditionalTimer(config=config, obj_list=obj_list)
     def tets(i, j):
         ressss = i * j
         return ressss
 
-    @AditionalTimer(config=config, obj_list=obj_list)
+    @AdditionalTimer(config=config, obj_list=obj_list)
     def tets2(i, j):
         ressss = i * j
         return ressss
@@ -136,16 +136,8 @@ def test22():
     print(spisok)
 
 def testttt():
-    CONFIG_FILE = ('configs', 'config.json')
-    CONFIG_FILE = join(abspath(pardir), CONFIG_FILE[0], CONFIG_FILE[1])
+    print(exit(-1073741510))
 
-    with open(CONFIG_FILE, 'r') as file:
-        config = load(file)
-
-    asdsd = config.get('logger_setting')
-
-    dfffgf = LoggerSettings(**asdsd)
-    print(dfffgf)
 if __name__ == '__main__':
 
     testttt()

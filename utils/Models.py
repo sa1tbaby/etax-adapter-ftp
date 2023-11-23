@@ -1,13 +1,12 @@
 import os.path
 
-import pandas
 from pandas import DataFrame
 from pydantic import BaseModel, field_validator
-from typing import List, Any
+from typing import Any
 from ssl import SSLContext, PROTOCOL_TLS_SERVER
 from OpenSSL.crypto import FILETYPE_PEM, load_certificate, load_privatekey, dump_certificate, dump_privatekey
 from dataclasses import dataclass
-
+from os.path import pardir, join, abspath
 
 
 @dataclass
@@ -107,10 +106,17 @@ class LoggerSettings(MyBaseModel):
     """
 
     level: int
-    filename: list
+    filename: list[str] | str
     filemode: str
     format: str
 
+    @field_validator('filename')
+    @classmethod
+    def return_filename(cls, item: list) -> str:
+        proj_dir = abspath(pardir)
+        filename = join(proj_dir, item[0], item[1])
+
+        return filename
 
 class Directories(MyBaseModel):
     """
@@ -149,6 +155,7 @@ class ServiceSettings(MyBaseModel):
     app_dwnld_timer_server: int
     app_sleep_time: int
     app_restart_timer: int
+    log_rotate_timer: int
     download_try_count: int
     validator: str
 
@@ -158,7 +165,7 @@ class Listing(MyBaseModel):
     Модель для хранения и валидации листинга
     """
 
-    files_list: List | None
+    files_list: Any
 
     @field_validator('files_list')
     @classmethod
@@ -166,9 +173,6 @@ class Listing(MyBaseModel):
             cls,
             files_list: DataFrame
     ) -> DataFrame | None:
-
-        if files_list.empty:
-            return None
 
         sorted_len = len(files_list) - 1
 

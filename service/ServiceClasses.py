@@ -65,15 +65,11 @@ class ServiceListing(FtpManager):
         else:
 
             try:
-                if listing_server.files_list is None:
-                    self._log.info(f'С сервера получен пустой листинг')
-                    return False
 
-                else:
-                    self._log.info(f'С сервера получен не пустой листинг \n'
-                                   f'time_spend={time_spend}\n'
-                                   f'{listing_server.files_list}')
-                    return listing_server
+                self._log.info(f'С сервера получен не пустой листинг \n'
+                               f'time_spend={time_spend}\n'
+                               f'{listing_server.files_list}')
+                return listing_server
 
             except Exception:
                 self._log.error('Ошибка при определении размера листинга с сервера',
@@ -90,15 +86,12 @@ class ServiceListing(FtpManager):
 
             put_in_queue(queue=self.client_queue, message=listing_client)
 
-            if listing_client.files_list is None:
-                self._log.info(f'С клиента получен пустой листинг')
-                return False
 
-            else:
-                self._log.info(f'С клиента получен не пустой листинг '
-                               f'time_spend={time_spend}\n'
-                               f'{listing_client.files_list}')
-                return listing_client
+            self._log.info(f'С клиента получен не пустой листинг '
+                           f'time_spend={time_spend}\n'
+                           f'{listing_client.files_list}')
+
+            return listing_client
 
         except Exception:
             self._log.error('Ошибка при получении листинга с клиента',
@@ -113,6 +106,7 @@ class ServiceListing(FtpManager):
     ) -> Listing:
 
         try:
+            self._log.debug(f'Start method _get_list, location={mode}, path={path}')
 
             index = 0
             files = None
@@ -130,7 +124,7 @@ class ServiceListing(FtpManager):
                     # получаем список файлов из директории FTP
                     files = self._connection.nlst()
 
-                    self._log.debug(f'Successfully get list of file from server '
+                    self._log.debug(f'Successfully get list of all file from server '
                                     f'count of file = {len(files)}')
 
             for iteration, file_name in enumerate(files):
@@ -150,9 +144,13 @@ class ServiceListing(FtpManager):
 
             # Сортируем список
             files_list.sort_values(by='file_name', ascending=True, inplace=True)
+            self._log.debug(f'Successfully create listing of files, location={mode}, '
+                            f'count of file = {len(files)}')
 
             # save and validate listing with __validation_model: model for pandas.DataFrame listing
             self.listing = Listing(files_list=files_list)
+            self._log.debug(f'Successfully validate listing of files location={mode}\n'
+                            f'{self.listing.files_list}')
 
             return self.listing
 
@@ -266,13 +264,13 @@ class ServiceSender(ServiceListing):
 
             self.cwd(path=self._send_params.path_server)
 
-            while try_count < self._settings.download_try_count:
+            self._log.debug(f'Инициализация отправки файла'
+                            f'file_name={self._send_params.file_name}, '
+                            f'path_client={self._send_params.path_client}, '
+                            f'path_server={self._send_params.path_server}, '
+                            f'destination={self._send_params.destination}')
 
-                self._log.debug(f'Инициализация отправки файла №{try_count}, '
-                                f'file_name={self._send_params.file_name}, '
-                                f'path_client={self._send_params.path_client}, '
-                                f'path_server={self._send_params.path_server}, '
-                                f'destination={self._send_params.destination}')
+            while try_count < self._settings.download_try_count:
 
                 match self._send_params.destination:
 
@@ -280,14 +278,14 @@ class ServiceSender(ServiceListing):
                     case self.MODE_CLIENT:
 
                         if (self.retr(
-                                path=self._send_params.path_client,
+                                path_client=self._send_params.path_client,
                                 file_name=self._send_params.file_name
                         ) and self._send_params.file_size == self.get_size(
                             mode=self._send_params.destination,
                             path=self._send_params.path_client,
                             file_name=self._send_params.file_name
                         ) and self.retr(
-                            path=self._send_params.path_client,
+                            path_client=self._send_params.path_client,
                             file_name=(self._send_params.file_name + self._send_params.validator)
                         )
                         ):
@@ -313,15 +311,16 @@ class ServiceSender(ServiceListing):
                     # Отправка файла с клиента в сторону сервера
                     case self.MODE_SERVER:
 
+
                         if (self.stor(
-                            path=self._send_params.path_server,
+                            path_client=self._send_params.path_client,
                             file_name=self._send_params.file_name
-                        ) and self._send_params.file_name == self.get_size(
+                        ) and self._send_params.file_size == self.get_size(
                             mode=self._send_params.destination,
                             path=self._send_params.path_server,
                             file_name=self._send_params.file_name
                         ) and self.stor(
-                            path=self._send_params.path_server,
+                            path_client=self._send_params.path_client,
                             file_name=(self._send_params.file_name + self._send_params.validator)
                         )
                         ):
@@ -394,11 +393,18 @@ class ServiceSender(ServiceListing):
                 match del_params.destination:
 
                     case self.MODE_SERVER:
-                        result = self._connection.delete(del_params.file_name)
-                        self._log.debug(f'ftplib.delete({del_params.file_name}): result={result}')
+                        result = (self._connection.delete(del_params.file_name),
+                                  self._connection.delete(del_params.file_name + del_params.validator))
+
+                        self._log.debug(f'Successfully ftplib.delete({del_params.file_name}): result={result}')
 
                     case self.MODE_CLIENT:
-                        remove(join(del_params.path_client, del_params.file_name))
+                        filename = join(del_params.path_client, del_params.file_name)
+
+                        remove(filename),
+                        remove(filename+del_params.validator)
+
+                        self._log.debug(f'Successfully os.remove {del_params.file_name}')
 
             except Exception:
                 try_count += 1
@@ -430,38 +436,52 @@ class ServiceSender(ServiceListing):
     def send_files(
             self,
             destination,
-            files_list: pandas.DataFrame | list
+            files_list: Listing | bool
     ):
-        kwargs = dict()
-        kwargs.update({'validator': self._settings.validator,
-                       'destination': destination})
 
-        if destination == self.MODE_SERVER:
-            kwargs.update({'path_client': self.listing_paths.from_client_to_server.client_path})
-            kwargs.update({'path_server': self.listing_paths.from_client_to_server.server_path})
+        try:
 
-        elif destination == self.MODE_CLIENT:
-            kwargs.update({'path_client': self.listing_paths.from_server_to_client.client_path})
-            kwargs.update({'path_server': self.listing_paths.from_server_to_client.server_path})
+            if type(files_list) != Listing:
+                return True
 
-        else:
-            return False
+            files_list: pandas.DataFrame = files_list.files_list
 
-        for index, row in files_list.iterrows():
+            kwargs = dict()
+            kwargs.update({'validator': self._settings.validator,
+                           'destination': destination})
 
-            kwargs.update({'file_name': row['file_name'],
-                           'file_size': row['file_size']})
+            if files_list.empty:
+                self._log.info(f'С сервера получен пустой листинг')
+                return True
 
-            if self.send_file(**kwargs) and not row['control_check']:
+            if destination == self.MODE_SERVER:
+                kwargs.update({'path_client': self.listing_paths.from_client_to_server.client_path})
+                kwargs.update({'path_server': self.listing_paths.from_client_to_server.server_path})
 
-                files_list.loc[index, 'control_check'] = self.del_file(**kwargs)
-                self._log.info(f'Отправка документа {row["file_name"]} завершена успешно')
-                #CHANGEMETHOD!!!!!!!!!!!!!!!!!!!!!!!
-                files_list = files_list.drop(index)
+            elif destination == self.MODE_CLIENT:
+                kwargs.update({'path_client': self.listing_paths.from_server_to_client.client_path})
+                kwargs.update({'path_server': self.listing_paths.from_server_to_client.server_path})
 
             else:
-                #CHANGEMETHOD!!!!!!!!!!!!!!!!!!!!!!!
-                return files_list.count()
+                return False
 
-        return True
+            for index, row in files_list.iterrows():
+
+                kwargs.update({'file_name': row['file_name'],
+                               'file_size': row['file_size']})
+
+                if self.send_file(**kwargs) and not row['control_check']:
+
+                    files_list.loc[index, 'control_check'] = self.del_file(**kwargs)
+                    self._log.info(f'Отправка документа {row["file_name"]} завершена успешно')
+
+                else:
+                    #CHANGEMETHOD!!!!!!!!!!!!!!!!!!!!!!!
+                    return files_list.count()
+
+        except:
+            self._log.critical('',exc_info=True)
+        else:
+            self._log.info(f'Upload files was successfully end ')
+            return True
 

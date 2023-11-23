@@ -104,7 +104,7 @@ class FtpManager:
                     return self._connection.size(file_name)
 
                 except Exception:
-                    self._log.error(msg=f'Something wet wrong when FTP manager try to get size'
+                    self._log.error(msg=f'Something wet wrong when FTP manager try to get size '
                                         f'of file {file_name}, from FTP server ', exc_info=True)
                     return -1
 
@@ -123,7 +123,7 @@ class FtpManager:
 
     def retr(
             self,
-            path,
+            path_client,
             file_name
     ) -> bool:
         """
@@ -131,7 +131,7 @@ class FtpManager:
         Метод принимает путь к файлу для сохранения на стороне клиента и имя файла
         Файл сохраняется с таким же именем с которым он был на сервер
 
-        :param path:
+        :param path_client:
         :param file_name:
         :return:
         """
@@ -139,7 +139,7 @@ class FtpManager:
         try:
 
             with open(
-                    join(path, file_name),
+                    join(path_client, file_name),
                     'wb'
             ) as file:
 
@@ -163,12 +163,12 @@ class FtpManager:
 
     def stor(
             self,
-            path,
+            path_client,
             file_name
     ) -> bool:
         """
 
-        :param path:
+        :param path_client: принимает путь к файлу на стороне клиента
         :param file_name:
         :return:
         """
@@ -176,7 +176,7 @@ class FtpManager:
         try:
 
             with open(
-                    join(path, file_name),
+                    join(path_client, file_name),
                     'rb'
             ) as file:
 

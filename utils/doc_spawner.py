@@ -3,7 +3,7 @@ from hashlib import sha1 as hash_sha1
 from os.path import abspath as os_abspath
 from os import system as os_system
 
-doc_count = 150000
+doc_count = 15000
 doc_random_count = 1525
 doc_content = 'please_help_me_they_are_keep_me_in_basement_and_coerce_me_to_write_the_code\n'
 doc_size = 1000
@@ -12,7 +12,7 @@ type_of_doce = ['RECADV', 'DESADV', 'INBOUND-', 'TEST_']
 type_ext = ['.zip', '.txt', '', '.xm', '.xlm', '.xml']
 type_marker = '.done'
 
-path = '/Users/Sa1tbaby/PycharmProjects/files_to_ftp/'
+path = '/FILES_FOR_FTP/'
 rnd_letter_pull = 'abcltfghijklmnopqrst'
 
 

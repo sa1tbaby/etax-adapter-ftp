@@ -2,6 +2,24 @@ import logging
 from multiprocessing.queues import Queue
 from multiprocessing import Process
 from typing import Any
+from time import time
+
+
+
+def log_rotate(create_date: float,
+               tiggering_time: int,
+               file_name: str):
+
+    if time() - create_date > tiggering_time:
+
+        with open(file_name, 'w') as file:
+            file.write('')
+
+        return True
+
+    else:
+        return False
+
 
 def put_in_queue(
         queue: Queue,
@@ -44,5 +62,5 @@ def script_status(process: Process | bool,
         return False
 
     else:
-        log.info(f'process status {process.is_alive()}')
+        log.debug(f'process status {process.is_alive()}')
         return process.is_alive()

@@ -1,16 +1,12 @@
 import time
-
-from service import ServiceClasses, log_app
-
-import os
-from multiprocessing import Queue
-from json import load
+import logging
+import ServiceClasses
 
 from utils.Models import ServiceSettings, Routes, FtpConnection
-from service import log_app
-
-from utils.Decorators import AditionalTimer
+from utils.Decorators import AdditionalTimer
 from utils.func import put_in_queue
+
+from multiprocessing import Queue
 
 
 def start_app(
@@ -23,11 +19,11 @@ def start_app(
     CONNECTION_SSL
 ):
 
+    log_app = logging.getLogger('app')
+
     try:
-
-        put_in_queue(APP_STATUS_QUEUE, 'SLAVE')
-
         func_list = dict()
+        put_in_queue(APP_STATUS_QUEUE, 'SLAVE')
 
         app = ServiceClasses.ServiceSender(
             settings=SETTINGS,
@@ -40,51 +36,43 @@ def start_app(
 
         put_in_queue(APP_STATUS_QUEUE, 'IDLE')
 
-        @AditionalTimer(SETTINGS.model_dump(), func_list)
+        @AdditionalTimer(SETTINGS.model_dump(), func_list)
         def app_dwnld_timer_client():
 
             put_in_queue(APP_STATUS_QUEUE, 'SLAVE')
 
             destination = app.MODE_CLIENT
             listing = app.listing_from_server()
-            result = app.send_files(destination, listing.files_list)
+            result = app.send_files(destination, listing)
 
             log_app.info(f'Download files from server was successfully end result={result}')
             put_in_queue(APP_STATUS_QUEUE, 'IDLE')
 
             return result
 
-        @AditionalTimer(SETTINGS.model_dump(), func_list)
+        @AdditionalTimer(SETTINGS.model_dump(), func_list)
         def app_dwnld_timer_server():
 
             put_in_queue(APP_STATUS_QUEUE, 'SLAVE')
 
             destination = app.MODE_SERVER
             listing = app.listing_from_client()
-            result = app.send_files(destination, listing.files_list)
+            result = app.send_files(destination, listing)
 
-            log_app.info(f'Upload files on server was successfully end result={result}')
+
             put_in_queue(APP_STATUS_QUEUE, 'IDLE')
 
             return result
 
-        @AditionalTimer(SETTINGS.model_dump(), func_list)
-        def app_restart_timer():
 
-            app.get_connection.close()
-
-            put_in_queue(APP_STATUS_QUEUE, 'DEAD')
-            log_app.info('app_restart_timer was triggerd '
-                         'current process will be kill and restart')
-
-
-            exit(-1073741510)
 
     except:
         log_app.critical('Caught a global exception from the '
-                         'start_app scope during app instance init',
+                         'start_app scope during app instance init, '
+                         'current process will be restart',
                          exc_info=True)
-        exit(-1073741510)
+
+        raise
 
     while True:
 
@@ -100,28 +88,15 @@ def start_app(
         except:
             log_app.critical('Caught a global exception from the '
                              'start_app scope during loop proceed'
-                             'the current process will be exit with '
-                             '-1073741510 code and restart',
+                             'the current process will be restart',
                              exc_info=True)
 
             app.get_connection.close()
-
             put_in_queue(APP_STATUS_QUEUE, 'DEAD')
 
-            exit(-1073741510)
+            raise
 
         else:
-            app_restart_timer()
-
-            log_app.info(f'The next iteration has been postponed for {SETTINGS.app_sleep_time}')
+            log_app.info(f'The next iteration in app has been postponed for {SETTINGS.app_sleep_time}sec')
             time.sleep(SETTINGS.app_sleep_time)
-
-
-
-
-
-
-
-
-
 
